@@ -1,41 +1,23 @@
-import cv2
-import streamlit as st
-from PIL import Image
-import numpy as np
+from flask import Flask, request
+from werkzeug.utils import secure_filename
+import os
 
-# Load Haar cascade
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+app = Flask(__name__)  # ✅ Corrected
 
-st.title("Face Detection App")
-run = st.button('Start Camera')
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-FRAME_WINDOW = st.image([])
+@app.route('/')
+def index():
+    return open('index.html').read()
 
-if run:
-    cap = cv2.VideoCapture(0)
+@app.route('/upload_frame', methods=['POST'])
+def upload_frame():
+    file = request.files['frame']
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(file_path)
+    return 'Frame received and saved.'
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.warning("Failed to grab frame.")
-            break
-
-        # Convert to grayscale
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # Detect face
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
-
-        # Draw box
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-        # Convert to RGB (Streamlit expects RGB)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Show frame in Streamlit
-        FRAME_WINDOW.image(frame)
-
-        # Exit on key press is not available in Streamlit loop;
-        # So you can add a stop button or just close the tab to stop
-
+if __name__ == '__main__':  # ✅ Corrected
+    app.run(debug=True)
